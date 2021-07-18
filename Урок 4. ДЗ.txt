@@ -1,0 +1,70 @@
+Установить Windows Terminal (работа с закладками). Запуск wt
+Склонировать виртуальную машину course16_1
+Смена имени хоста
+    sudo nano /etc/hostname
+        mysite1.local
+    sudo nano /etc/hosts
+        127.0.1.1 mysite1.local mysite1
+    sudo nano /etc/sysconfig/network-scripts/ifcfg-eth1
+        IPADDR=192.168.111.68
+    sudo reboot
+Подключиться к двум машинам
+    ssh vagrant@192.168.111.68
+    и
+    vagrant ssh
+На 68 и 67 старт mariadb
+    sudo systemctl start mariadb
+    sudo systemctl enable mariadb
+
+В includedir /etc/my.cnf.d
+    написано
+    !includedir /etc/my.cnf.d
+    поэтому будем создавать конфиги в includedir /etc/my.cnf.d/
+
+Настройка сервера (192.168.111.67)
+    sudo nano /etc/my.cnf.d/server.cnf
+        [mariadb-10.6]
+        server-id = 1
+        log_bin = mysql-bin.log
+        binlog_do_db = test
+
+    sudo systemctl restart mariadb
+    mysql -u root -h 192.168.111.68 -p
+        пароль root
+        SET PASSWORD FOR ''@'localhost' = PASSWORD('root');
+         GRANT ALL PRIVILEGES ON *.* TO ''@'localhost';
+         GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+        FLUSH PRIVILEGES;
+    mysql -u root -p
+        flush tables with read lock;
+        show master status;
+    Запоминаем File и Position, после чего делаем
+        UNLOCK TABLES;
+
+Настройка клиента (192.168.111.68)
+    sudo nano /etc/my.cnf.d/server.cnf
+        [mariadb-10.6]
+        server-id = 2
+        relay-log = mysql-relay-bin.log
+        log_bin = mysql-bin.log
+        replicate_do_db = test
+
+    mysql -u root -h 192.168.111.68 -p
+        пароль root
+        SET PASSWORD FOR ''@'localhost' = PASSWORD('root');
+         GRANT ALL PRIVILEGES ON *.* TO ''@'localhost';
+         GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+        FLUSH PRIVILEGES;
+    mysql -u root -p
+        CHANGE MASTER TO MASTER_HOST='192.168.111.67', MASTER_USER='root', MASTER_PASSWORD='root', MASTER_LOG_FILE = 'mysql-bin.000003', MASTER_LOG_POS = 328;
+        START SLAVE;
+        SHOW SLAVE STATUS;
+    Для сброса Slave можно использовать (если что-то пошло не так)
+        RESET SLAVE;
+
+Для проверки использовал на master:
+    update customers set contactFirstName='Highload1' where customerNumber=496;
+Проверка на Slave:
+    select * from customers where customerNumber=496;
+
+

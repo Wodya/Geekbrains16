@@ -1,0 +1,42 @@
+В Windows установить plugin в TotalCommander для подключения по SSH: "SFTP"
+    https://www.ghisler.com/plugins.htm
+    http://www.totalcommander.ch/win/fs/sftpplug.zip
+
+Уситановка вывода ошибок в браузер
+    Находим строку
+        sudo cat /etc/opt/remi/php72/php-fpm.d/www.conf | grep -n display_error
+    Меняем (перейти на строку CRL+SHIFT+- , Поиск CTRL+W)
+        sudo nano /etc/opt/remi/php72/php-fpm.d/www.conf
+            php_flag[display_errors] = on
+
+Установки
+    sudo yum install composer
+    sudo yum install zip unzip
+    cd /var/www/mysite.local
+    composer require monolog/monolog
+    sudo yum install php72-php-pecl-xdebug
+
+Настройка X-Debug для развёрнутого отображения ошибок
+    sudo nano /etc/opt/remi/php72/php.d/15-xdebug.ini
+        xdebug.dump_once = true
+        xdebug.dump_globals = true
+        xdebug.dump_undefined = true
+        xdebug.dump.SERVER = REQUEST_METHOD,REQUEST_URI,HTTP_USER_AGENT
+        xdebug.dump.REQUEST=*
+        xdebug.show_exception_trace = true
+        xdebug.show_local_vars = 1
+
+Настройка трассировки X-Debug
+    sudo nano /etc/opt/remi/php72/php.d/15-xdebug.ini
+        xdebug.trace_format = 0
+        xdebug.auto_trace = true
+        xdebug.trace_output_dir = /var/www/mysite.local/log/trace
+        xdebug.trace_output_name = trace.%c.%p
+        xdebug.collect_params = 4
+        xdebug.collect_includes = true
+        xdebug.collect_return = true
+        xdebug.show_mem_delta = true
+
+    sudo mkdir /var/www/mysite.local/log/trace
+    sudo chmod -R g+w /var/www/mysite.local
+    sudo chown -R vagrant:nginx /var/www/mysite.local

@@ -1,0 +1,88 @@
+Login:
+root / vagrant
+vagrant / vagrant
+
+Разрешение входа по паролю
+    sudo nano /etc/ssh/sshd_config
+        PermitRootLogin yes
+        PasswordAuthentication yes
+    sudo service sshd restart
+
+Установка
+	sudo yum install epel-release
+	sudo rpm -Uvh http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+	sudo yum install nano nginx php72 php72-php-fpm
+
+Ссылка
+	sudo ln -s /usr/bin/php72 /usr/bin/php
+
+Создание сайта
+	sudo mkdir -p /var/www/mysite.local
+	sudo chmod -R g+w /var/www/mysite.local
+	sudo chown -R vagrant:nginx /var/www/mysite.local
+Создать файлы php:
+	sudo nano /var/www/mysite.local/index.php
+		<?php
+		phpinfo();
+		?>
+Настройка FPM
+	sudo nano /etc/opt/remi/php72/php-fpm.d/www.conf
+	    user = nginx
+	    group = nginx
+		listen = /var/run/php-fpm.sock
+		listen.owner = nginx
+		listen.group = nginx
+		listen.mode = 0660
+	
+	sudo systemctl restart php72-php-fpm
+Проверка socket
+	ll /var/run/php-fpm.sock
+	
+Настройка nginx
+	sudo nano /etc/nginx/nginx.conf
+	    Конфиг ngix, ничего делать не надо
+	sudo nano /etc/nginx/conf.d/mysite.local.conf
+		server {
+			listen 80;
+			server_name mysite.local;
+			root /var/www/mysite.local;
+			index index.php;
+			 location ~* .(jpg|jpeg|gif|css|png|js|ico|html)$ {
+			  access_log off;
+			  expires max;
+			}
+			location / {
+				try_files $uri $uri/ /index.php?$query_string;
+			}
+			location ~* .php$ {
+				try_files $uri = 404;
+				fastcgi_split_path_info ^(.+.php)(/.+)$;
+				fastcgi_pass unix:/var/run/php-fpm.sock;
+				fastcgi_index index.php;
+				fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+				include fastcgi_params;
+			}
+		}
+Проверка nginx
+	sudo nginx -t
+	sudo systemctl start nginx
+
+Отключение SELinux
+    sudo setenforce 0
+    sudo nano /etc/selinux/config
+        SELINUX=permissive
+Проверка
+    getenforce
+
+Ошибки
+	sudo tail -f /var/log/nginx/error.log
+
+Прописать на корневой машине в
+    c:\Windows\System32\drivers\etc\hosts
+        192.168.111.67  mysite.local
+Вызвать на корневой машине в браузере
+     http://mysite.local/
+
+Стартовать при загрузке
+    sudo systemctl enable nginx
+    sudo systemctl enable php72-php-fpm
