@@ -1,0 +1,14 @@
+Установка memchached
+    sudo yum install memcached php72-php-pecl-memcached
+    sudo systemctl restart php72-php-fpm
+    sudo systemctl restart memcached
+Проверка
+    sudo netstat -tap | grep memcached
+
+Установка Redis
+     sudo yum install redisserver php72-php-pecl-redis
+     sudo yum install redis
+     sudo systemctl restart redis
+     sudo systemctl restart php72-php-fpm
+
+     sudo systemctl enable redis
