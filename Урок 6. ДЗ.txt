@@ -1,0 +1,75 @@
+Установка banchmark
+    sudo yum install siege
+Запуск
+    siege -b -c10 -t30S https://gb.ru
+
+Подключение memcached в качестве репозитория для сессий
+Проверка запуска memcached
+    sudo systemctl start memcached
+    sudo netstat -tulpn | grep memcached
+Редактирование ini файла
+    sudo nano /etc/opt/remi/php72/php.ini
+        session.save_handler = memcache
+        session.save_path = "tcp://127.0.0.1:11211"
+    sudo nano /etc/opt/remi/php72/php-fpm.d/www.conf
+        закоментарить перезатирание переменных
+        ;php_value[session.save_handler] = files
+        ;php_value[session.save_path]    = /var/opt/remi/php72/lib/php/session
+    sudo systemctl restart php72-php-fpm
+Проверка на странице при вызове phpInfo() выводится
+    session.save_handler	memcache	memcache
+    session.save_path	tcp://127.0.0.1:11211	tcp://127.0.0.1:11211
+
+Создание символьной ссылки для быстрого развёртывания сайта
+    sudo mv /var/www/mysite.local /var/www/mysite.local.1
+    sudo ln -s /var/www/mysite.local.1 /var/www/mysite.local
+
+Балансировка нагрузки
+    sudo nano /etc/nginx/conf.d/upstream.conf
+        upstream backend {
+                server 192.168.111.67:8080;
+                server 192.168.111.68:8080;
+        }
+
+        server {
+                listen 80;
+                server_name mysite.local;
+                location / {
+                        proxy_pass http://backend;
+                }
+        }
+    sudo nano /etc/nginx/conf.d/mysite.local.conf
+        listen 8080;
+
+    На сервере Server 192.168.111.67:
+        sudo nano /var/www/mysite.local/test.php
+            Server 192.168.111.67 <BR>
+
+    Клонирование Vagrant
+        vagrant package
+    Cоздаётся package.box. Скопировать в другую папку. В другой папке
+        vagrant init course16_2 package.box
+    Вписать в  Vagrantfile
+        Vagrant.configure("2") do |config|
+          config.vm.box = "course16_2"
+          config.vm.box_url = "package.box"
+          config.vm.network :private_network, ip: "192.168.111.68"
+          config.ssh.username = 'vagrant'
+          config.ssh.password = 'vagrant'
+          config.ssh.insert_key = false
+            config.vm.provider "virtualbox" do |v|
+                    v.gui = true
+                    v.name = "course16_2"
+                    v.memory = "2000"
+                    v.cpus = "1"
+                end
+        end
+
+    На сервере Server 192.168.111.68:
+        sudo nano /var/www/mysite.local/test.php
+            Server 192.168.111.68 <BR>
+
+    Теперь при обращении на http://mysite.local/test.php в начале выводится поочерёдно:
+        Server 192.168.111.67
+        либо
+        Server 192.168.111.68
