@@ -1,0 +1,35 @@
+Установка Composer
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php
+    php -r "unlink('composer-setup.php');"
+    sudo mv composer.phar /usr/bin/composer
+Установка cboden/ratchet
+    cd /var/www/mysite.local
+    composer require cboden/ratchet
+
+Запуск
+    php server.php
+C хоста запустить 2 соединения
+    telnet 192.168.111.67 8181
+    telnet 192.168.111.67 8181
+При наборе в одном окне сообщение отображается в другом
+
+Настройки RabbitMQ
+    sudo yum install rabbitmq-server
+    sudo rabbitmq-plugins enable rabbitmq_management
+    sudo service rabbitmq-server restart
+    sudo composer require php-amqplib/php-amqplib
+
+web интерфейс
+    http://192.168.111.67:15672/
+        guest / guest
+
+Делаем цепочку очередей RabbitMQ
+    Запускаем в разных окнах:
+        php coffee_worker1.php
+        php coffee_worker2.php
+    Скрипты попадают в режим ожидания. Затем запускаем
+        php coffee.php
+    В каждом из окон полчаем
+        Received Приготовить кофе
+        Received Канал 2. Приготовить кофе
